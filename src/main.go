@@ -8,6 +8,7 @@ import (
 	"os"
 	"pro-backend-trainee-assignment/src/handler"
 	"pro-backend-trainee-assignment/src/repository"
+	"pro-backend-trainee-assignment/src/service"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -59,7 +60,8 @@ func main() {
 	defer db.Close()
 
 	repo := repository.NewRepository(db)
-	handler := handler.NewHandler(repo)
+	service := service.NewService(repo)
+	handler := handler.NewHandler(service)
 
 
 	r := mux.NewRouter()

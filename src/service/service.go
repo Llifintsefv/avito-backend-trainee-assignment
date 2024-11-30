@@ -12,9 +12,11 @@ import (
 type Service interface {
 	GenerateRandomNumber(length int, Type string) (int64, error)
 	GenerateRandomString(length int, Type string) (int64, error)
-	GenerateRandomGUID(length int, Type string) (int64, error)
+	GenerateRandomGUID(Type string) (int64, error)
 	GenerateRandomAlphanumeric(length int, Type string) (int64, error)
-	GenerateRandomEnum(length int, Type string, values []string) (int64, error)
+	GenerateRandomEnum(values []string, Type string) (int64,error)
+
+	Retrieve(id int)(interface{},error)
 }
 
 type service struct {
@@ -25,6 +27,23 @@ func NewService(repo repository.Repository) *service {
 	return &service{repo: repo}
 }
 
+func (s *service) Retrieve(id int)(interface{},error){
+	value,Type,err := s.repo.Retrieve(id)
+	if err != nil {
+		return "",err
+	}
+	if Type == "number" {
+		valueInt,err := strconv.Atoi(value)
+		if err != nil {
+			return "",err
+		}
+		return valueInt,nil
+	}
+
+	return value,nil
+
+
+} 
 func (s *service) GenerateRandomNumber(length int, Type string) (int64, error) {
 	number := generateNumber(length)
 
@@ -48,8 +67,8 @@ func (s *service) GenerateRandomString(length int, Type string) (int64, error) {
 }
 
 
-func (s *service) GenerateRandomGUID(length int, Type string) (int64,error) {
-	guid := generateGUID(length)
+func (s *service) GenerateRandomGUID(Type string) (int64,error) {
+	guid := generateGUID()
 
 	id,err := s.repo.Generate(guid,Type)
 	if err != nil {
@@ -69,10 +88,10 @@ func (s *service) GenerateRandomAlphanumeric(length int, Type string) (int64,err
 	return id,nil
 }
 
-func (s *service) GenerateRandomEnum(length int, Type string, values []string) (int64,error) {
-	alphamuric := generateAlphanumeric(length)
+func (s *service) GenerateRandomEnum(values []string,Type string) (int64,error) {
+	enum := generateEnum(values)
 
-	id,err := s.repo.Generate(alphamuric,Type)
+	id,err := s.repo.Generate(enum,Type)
 	if err != nil {
 		return  0,err
 	}
@@ -92,6 +111,23 @@ func generateNumber(length int) (string) {
 }
 
 func generateString(length int) (string) {
+	RuneArr := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	rand.Seed(time.Now().UnixNano())
+	var result string
+	for i := 0; i < length; i++ {
+		result += string(RuneArr[rand.Intn(len(RuneArr))])
+	}
+	return result
+}
+
+
+func generateGUID() (string) {
+	guid := uuid.New().String()
+
+	return guid
+}
+
+func generateAlphanumeric(length int) (string) {
 	RuneArr := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 	rand.Seed(time.Now().UnixNano())
 	var result string
@@ -101,19 +137,7 @@ func generateString(length int) (string) {
 	return result
 }
 
-
-func generateGUID(length int) (int, error) {
-	guid := uuid.New().String()
-
-	return guid, nil
-}
-
-func generateAlphanumeric(length int) (string, error) {
-	RuneArr := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	rand.Seed(time.Now().UnixNano())
-	var result string
-	for i := 0; i < length; i++ {
-		result += string(RuneArr[rand.Intn(len(RuneArr))])
-	}
-	return result
+func generateEnum(values []string) (string) {
+	randomIndex := rand.Intn(len(values))
+    return values[randomIndex]
 }

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"pro-backend-trainee-assignment/src/service"
 	"strconv"
@@ -31,7 +32,7 @@ type RetrieveRequest struct {
 }
 
 type RetrieveResponse struct {
-	value interface{}
+	value interface{} `json:"value"`
 }
 
 
@@ -46,8 +47,9 @@ func (h *Handler)GenerateHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w,"bad request",http.StatusBadRequest)
 		return
 	}
+	fmt.Println(req)
 
-	if req.Type != "string" && req.Type != "int" && req.Type != "guid" && req.Type != "enum" {
+	if req.Type != "string" && req.Type != "number" && req.Type != "guid" && req.Type != "alphanumeric" && req.Type != "enum" {
 		http.Error(w,"invalid type",http.StatusBadRequest)
 		return
 	}
@@ -76,7 +78,8 @@ func (h *Handler)GenerateHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-type","application/json")
 	if err := json.NewEncoder(w).Encode(GenResponse); err != nil {
-		
+		http.Error(w,"internal server error",http.StatusInternalServerError)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 
@@ -89,12 +92,26 @@ func (h *Handler)RetrieveHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w,"bad request",http.StatusBadRequest)
 		return
 	}
-	value,err:= h.repo.Retrieve(id)
+
+	value,err := h.service.Retrieve(id)
 	if err != nil {
 		http.Error(w,"internal server error",http.StatusInternalServerError)
 		return
 	}
-	
-	w.Write([]byte(strconv.Itoa(value)))
+	fmt.Println(value)
+	var retrieveResponse interface{}
+	switch v := value.(type) {
+	case string:
+		retrieveResponse = v 
+	case int:
+		retrieveResponse = v
+	}
+
+
+	w.Header().Set("Content-type","application/json")
+	if err := json.NewEncoder(w).Encode(retrieveResponse); err != nil {
+		http.Error(w,"internal server error",http.StatusInternalServerError)
+		return
+	}
 	
 }
