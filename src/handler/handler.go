@@ -59,14 +59,14 @@ func (h *Handler)GenerateHandler(w http.ResponseWriter, r *http.Request) {
 	case "number":
 		GenResponse,err = h.service.GenerateRandomNumber(req.Length,req.Type)
 	case "guid":
-		GenResponse,err = h.service.GenerateRandomGUID(req.Length,req.Type)
+		GenResponse,err = h.service.GenerateRandomGUID(req.Type)
 	case "alphanumeric":
 		GenResponse,err = h.service.GenerateRandomAlphanumeric(req.Length,req.Type)
 	case "enum":
 		if len(req.Values) == 0 {
 			http.Error(w,"values cannot be empthy for enum",http.StatusBadRequest)
 		}
-		GenResponse,err = h.service.GenerateRandomEnum(req.Values)
+		GenResponse,err = h.service.GenerateRandomEnum(req.Values,req.Type)
 	}
 
 	if err != nil {
