@@ -19,9 +19,7 @@ func NewHandler(service service.Service) *Handler{
 }
 
 var (
-	GenRequest models.GenRequest
 	RetrieveRequest models.RetrieveRequest
-	RetrieveResponse models.Response
 )
 
 
@@ -61,15 +59,20 @@ func (h *Handler)GenerateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler)RetrieveHandler(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id:= params["id"]
+	var RetrieveRequest models.RetrieveRequest
 
-	 if id == "" {
+	params := mux.Vars(r)
+	RetrieveRequest.ID = params["id"]
+
+	 if RetrieveRequest.ID == "" {
          http.Error(w, "missing id parameter", http.StatusBadRequest)
          return
      }
+	
+	RetrieveRequest.UserAgent = r.Header.Get("User-Agent")
+	RetrieveRequest.Url = r.URL.String()
 
-	Response,err := h.service.Retrieve(id)
+	Response,err := h.service.Retrieve(RetrieveRequest)
 	if err != nil {
 		http.Error(w,"internal server error",http.StatusInternalServerError)
 		return

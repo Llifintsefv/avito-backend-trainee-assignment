@@ -14,7 +14,7 @@ import (
 
 type Service interface {
 	GenerateNumber(models.GenRequest) (models.Response,error)
-	Retrieve(id string)(models.Response,error)
+	Retrieve(models.RetrieveRequest)(models.Response,error)
 }
 
 type service struct {
@@ -25,25 +25,21 @@ func NewService(repo repository.Repository) *service {
 	return &service{repo: repo}
 }
 
-func (s *service) Retrieve(Request string) (models.Response, error) {
-	value, Type, err := s.GetValueById(id)
+func (s *service) Retrieve(RetrieveRequest models.RetrieveRequest) (models.Response, error) {
+	Response,err := s.GetValueById(RetrieveRequest.ID)
 	if err != nil {
 		return models.Response{}, err
 	}
 
-	response := models.Response{Id: id}
+	var GenValue models.GenerateValue
 
-	if Type == "number" {
-		valueInt, err := strconv.Atoi(value)
-		if err != nil {
-			return models.Response{}, err 
-		}
-		response.Value = valueInt 
-	} else {
-		response.Value = value 
-	}
-
-	return response, nil 
+	GenValue.ID = Response.Id
+	GenValue.UserAgent = RetrieveRequest.UserAgent
+	GenValue.Url = RetrieveRequest.Url
+	GenValue.RequestId = RetrieveRequest.RequestId
+	err = s.repo.Generate(GenValue)
+	
+	return Response, nil 
 }
 
 func (s *service) GetValueById(id string) (models.Response, error) {
