@@ -1,22 +1,20 @@
 package service
 
 import (
+	"errors"
 	"math/rand"
+	"pro-backend-trainee-assignment/src/models"
 	"pro-backend-trainee-assignment/src/repository"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 type Service interface {
-	GenerateRandomNumber(length int, Type string) (int64, error)
-	GenerateRandomString(length int, Type string) (int64, error)
-	GenerateRandomGUID(Type string) (int64, error)
-	GenerateRandomAlphanumeric(length int, Type string) (int64, error)
-	GenerateRandomEnum(values []string, Type string) (int64,error)
-
-	Retrieve(id int)(interface{},error)
+	GenerateNumber(models.GenRequest) (models.Response,error)
+	Retrieve(id string)(models.Response,error)
 }
 
 type service struct {
@@ -27,97 +25,125 @@ func NewService(repo repository.Repository) *service {
 	return &service{repo: repo}
 }
 
-func (s *service) Retrieve(id int)(interface{},error){
-	value,Type,err := s.repo.Retrieve(id)
+func (s *service) Retrieve(Request string) (models.Response, error) {
+	value, Type, err := s.GetValueById(id)
 	if err != nil {
-		return "",err
+		return models.Response{}, err
 	}
+
+	response := models.Response{Id: id}
+
 	if Type == "number" {
-		valueInt,err := strconv.Atoi(value)
+		valueInt, err := strconv.Atoi(value)
 		if err != nil {
-			return "",err
+			return models.Response{}, err 
 		}
-		return valueInt,nil
+		response.Value = valueInt 
+	} else {
+		response.Value = value 
 	}
 
-	return value,nil
+	return response, nil 
+}
 
-
-} 
-func (s *service) GenerateRandomNumber(length int, Type string) (int64, error) {
-	number := generateNumber(length)
-
-	id,err := s.repo.Generate(number,Type) 
+func (s *service) GetValueById(id string) (models.Response, error) {
+	value, Type, err := s.repo.Retrieve(id)
 	if err != nil {
-		return  0,err
+		return models.Response{}, err
 	}
-	return id,nil
+
+	response := models.Response{Id: id}
+
+	if Type == "number" {
+		valueInt, err := strconv.Atoi(value)
+		if err != nil {
+			return models.Response{}, err 
+		}
+		response.Value = valueInt 
+	} else {
+		response.Value = value 
+	}
+
+	return response, nil 
+}
+
+
+func (s *service) GenerateNumber(req models.GenRequest) (models.Response,error) {
+	var GenValue models.GenerateValue
+	var err error
 	
-}
+	GenValue.RequestId = req.RequestId
 
-func (s *service) GenerateRandomString(length int, Type string) (int64, error) {
-	valueString := generateString(length)
-
-	id,err := s.repo.Generate(valueString,Type) 
+	GenValue.CountRequest,err = s.repo.GetCountRequest(GenValue.RequestId)
 	if err != nil {
-		return  0,err
+		return models.Response{}, errors.New("Error to find countRequest")
 	}
-	return id,nil
 
-}
+	if GenValue.CountRequest != 0 {
+		id := s.repo.UpdateCountRequestAndRetrieveId(GenValue.RequestId,GenValue.CountRequest+1)
+		var Response models.Response
+		Response,err = s.GetValueById(id)
+		if err != nil {
+			return Response, errors.New("Error to find value")
+		}
+		return Response, nil
+		// вернуть надо уже сгенерированное
+	}
+
+	GenValue.ID = generateGUID()
+	GenValue.Type = req.Type
+	GenValue.UserAgent = req.UserAgent
+	GenValue.Url = req.Url
 
 
-func (s *service) GenerateRandomGUID(Type string) (int64,error) {
-	guid := generateGUID()
+	switch req.Type {
+	case "string":
+		GenValue.Value = generateString(req.Length)
+	case "number":
+		GenValue.Value = generateNumber(req.Length)
+	case "guid":
+		GenValue.Value = generateGUID()
+	case "alphanumeric":
+		GenValue.Value= generateAlphanumeric(req.Length)
+	case "enum":
+		if len(req.Values) == 0 {
+			return models.Response{}, errors.New("values cannot be empthy for enum")
+		}
+		GenValue.Value = generateEnum(req.Values)
+	}
 
-	id,err := s.repo.Generate(guid,Type)
+	err = s.repo.Generate(GenValue) 
 	if err != nil {
-		return  0,err
+		return models.Response{}, errors.New("Error to generate value")
 	}
-	return id,nil
+	
+	var Response models.Response
+	Response = models.Response{Id: GenValue.ID, Value: GenValue.Value}
+	return Response, nil
 
-}
 
-func (s *service) GenerateRandomAlphanumeric(length int, Type string) (int64,error) {
-	alphamuric := generateAlphanumeric(length)
-
-	id,err := s.repo.Generate(alphamuric,Type)
-	if err != nil {
-		return  0,err
-	}
-	return id,nil
-}
-
-func (s *service) GenerateRandomEnum(values []string,Type string) (int64,error) {
-	enum := generateEnum(values)
-
-	id,err := s.repo.Generate(enum,Type)
-	if err != nil {
-		return  0,err
-	}
-	return id,nil
 }
 
 
 func generateNumber(length int) (string) {
 	rand.Seed(time.Now().UnixNano())
-	if length != 0{
-		strInt := strconv.Itoa(rand.Intn(length))
-		return strInt
+	var result string
+	for i := 0; i < length; i++ {
+		result += strconv.Itoa(rand.Intn(10))
 	}
-
-	strInt := strconv.Itoa(rand.Intn(100000000))
-	return strInt
+	return result
+	
 }
 
 func generateString(length int) (string) {
-	RuneArr := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	rand.Seed(time.Now().UnixNano())
-	var result string
-	for i := 0; i < length; i++ {
-		result += string(RuneArr[rand.Intn(len(RuneArr))])
-	}
-	return result
+	RuneArr := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    var sb strings.Builder
+    sb.Grow(length)
+    for i := 0; i < length; i++ {
+        sb.WriteRune(RuneArr[rand.Intn(len(RuneArr))])
+    }
+    return sb.String()
 }
 
 
@@ -130,11 +156,12 @@ func generateGUID() (string) {
 func generateAlphanumeric(length int) (string) {
 	RuneArr := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 	rand.Seed(time.Now().UnixNano())
-	var result string
-	for i := 0; i < length; i++ {
-		result += string(RuneArr[rand.Intn(len(RuneArr))])
-	}
-	return result
+	var sb strings.Builder
+    sb.Grow(length)
+    for i := 0; i < length; i++ {
+        sb.WriteRune(RuneArr[rand.Intn(len(RuneArr))])
+    }
+    return sb.String()
 }
 
 func generateEnum(values []string) (string) {

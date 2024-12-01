@@ -43,7 +43,7 @@ func InitDB() (*sql.DB,error) {
 		return nil,fmt.Errorf("failed to ping db: %w", err)
 	}
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS random_values (id SERIAL PRIMARY KEY, values TEXT, type TEXT)")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS random_values (id SERIAL PRIMARY KEY,guid TEXT, values TEXT, type TEXT, user_agent TEXT,requestid INTEGER,url TEXT,countRequest INTEGER)")
 	if err != nil {
 		return nil,fmt.Errorf("failed to create table: %w", err)
 	}
