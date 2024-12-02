@@ -106,10 +106,11 @@ func (r *repository) Retrieve(id string) (string,string, error) {
 
 func (r *repository) GetCountRequest(requestId int) (int, error) {
 	var countRequest int
-	err := r.db.QueryRow("SELECT countRequest FROM random_values WHERE countRequest = $1", requestId).Scan(&countRequest)
+	err := r.db.QueryRow("SELECT countRequest FROM random_values WHERE requestid = $1", requestId).Scan(&countRequest)
+
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return 0, nil 
+			return 0, nil
 		}
 		return 0, fmt.Errorf("failed to get countRequest: %w", err)
 	}

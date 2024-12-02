@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
 	"pro-backend-trainee-assignment/src/models"
 	"pro-backend-trainee-assignment/src/repository"
@@ -83,9 +84,10 @@ func (s *service) GenerateNumber(req models.GenRequest) (models.Response,error) 
 			return Response, errors.New("Error to find value")
 		}
 		return Response, nil
-		// вернуть надо уже сгенерированное
+	} else {
+		GenValue.CountRequest = 2
 	}
-
+	
 	GenValue.ID = generateGUID()
 	GenValue.Type = req.Type
 	GenValue.UserAgent = req.UserAgent
