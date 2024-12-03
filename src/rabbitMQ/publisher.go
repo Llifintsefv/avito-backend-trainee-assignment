@@ -13,7 +13,7 @@ func NewPublisher(ch *amqp.Channel) (*Publisher, error) {
 
 func (p *Publisher) PublishGenerateValue(reqJson []byte) error{
 	
-	err := p.channel.Publish(
+	return p.channel.Publish(
 		"GenerationQueue",
 		"GenerateValue",
 		false,
@@ -22,11 +22,5 @@ func (p *Publisher) PublishGenerateValue(reqJson []byte) error{
 			ContentType: "application/json",
 			Body:        reqJson,
 		},
-	)
-	if err != nil {
-		return err
-	}
-	return nil
-
-	
+	)	
 }

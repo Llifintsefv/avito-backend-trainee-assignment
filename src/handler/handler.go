@@ -24,11 +24,6 @@ func NewHandler(service service.Service, publisher *rabbitmq.Publisher) *Handler
 	}
 }
 
-var (
-	RetrieveRequest models.RetrieveRequest
-)
-
-
 
 func (h *Handler)GenerateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {

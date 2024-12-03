@@ -4,14 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"pro-backend-trainee-assignment/src/models"
-	"time"
 )
 
 type Repository interface {
 	Generate(models.GenerateValue) (error)
 	Retrieve(string) (string,string,error)
 	GetCountRequest(int) (int, error)
-	UpdateCountRequestAndRetrieveId(int,int) (string)
+	UpdateCountRequestAndRetrieveId(int,int) (string,error)
 }
 
 type repository struct {
@@ -22,58 +21,23 @@ func NewRepository(db *sql.DB) Repository {
 	return &repository{db: db}
 }
 
-// func (r *repository) Generate(GenValue models.GenerateValue) (error) {
-	
-//     stmt, err := r.db.Prepare("INSERT INTO random_values (guid,values, type,user_agent,requestid,url,countRequest) VALUES ($1, $2,$3,$4,$5,$6,$7)")
-//     if err != nil {
-//         return fmt.Errorf("fail to prepare statement: %w", err) 
-//     }
-//     defer stmt.Close()
-
-//     _,err = stmt.Exec(GenValue.ID,GenValue.Value,GenValue.Type,GenValue.UserAgent,GenValue.RequestId,GenValue.Url,GenValue.CountRequest)
-//     if err != nil {
-//         return fmt.Errorf("fail to insert value: %w", err) 
-//     }
-
-//     return nil
-// }
-
 func (r *repository) Generate(GenValue models.GenerateValue) (error) {
-	time.Sleep(10 *time.Second)
-	stmt, err := r.db.Prepare("INSERT INTO random_values (guid,values, type,user_agent,requestid,url,countRequest) VALUES ($1, $2,$3,$4,$5,$6,$7)")
-	if err != nil {
-		return fmt.Errorf("fail to prepare statement: %w", err)
-	}
-	defer stmt.Close()
+	
+    stmt, err := r.db.Prepare("INSERT INTO random_values (guid,values, type,user_agent,requestid,url,countRequest) VALUES ($1, $2,$3,$4,$5,$6,$7)")
+    if err != nil {
+        return fmt.Errorf("fail to prepare statement: %w", err) 
+    }
+    defer stmt.Close()
 
-	_, err = stmt.Exec(GenValue.ID, GenValue.Value, GenValue.Type, GenValue.UserAgent, GenValue.RequestId, GenValue.Url, GenValue.CountRequest)
-	if err != nil {
-		return fmt.Errorf("fail to insert value: %w", err)
-	}
+    _,err = stmt.Exec(GenValue.ID,GenValue.Value,GenValue.Type,GenValue.UserAgent,GenValue.RequestId,GenValue.Url,GenValue.CountRequest)
+    if err != nil {
+        return fmt.Errorf("fail to insert value: %w", err) 
+    }
 
-	rows, err := r.db.Query("SELECT guid, values, type, user_agent, requestid, url, countRequest FROM random_values")
-	if err != nil {
-		return fmt.Errorf("fail to fetch data for debug: %w", err)
-	}
-	defer rows.Close()
-
-	fmt.Println("--- Database Contents ---")
-	for rows.Next() {
-		var guid, value, type_, userAgent, requestid, url string
-		var countRequest int
-		err := rows.Scan(&guid, &value, &type_, &userAgent, &requestid, &url, &countRequest)
-		if err != nil {
-			return fmt.Errorf("fail to scan row for debug: %w", err)
-		}
-		fmt.Printf("GUID: %s, Value: %s, Type: %s, User-Agent: %s, RequestID: %s, URL: %s, Count: %d\n", guid, value, type_, userAgent, requestid, url, countRequest)
-	}
-	if err = rows.Err(); err != nil {
-		return fmt.Errorf("fail to iterate rows for debug: %w", err)
-	}
-	fmt.Println("------------------------")
-
-	return nil
+    return nil
 }
+
+
 
 
 
@@ -122,10 +86,13 @@ func (r *repository) GetCountRequest(requestId int) (int, error) {
 	return countRequest, nil
 }
 
-func (r *repository) UpdateCountRequestAndRetrieveId(requestId int, countRequest int) (string){
+func (r *repository) UpdateCountRequestAndRetrieveId(requestId int, countRequest int) (string,error){
 	var id string
-    _  = r.db.QueryRow("UPDATE random_values SET countRequest = $2 WHERE requestid = $1 RETURNING guid", requestId, countRequest).Scan(&id)
-	return id
+    err := r.db.QueryRow("UPDATE random_values SET countRequest = $2 WHERE requestid = $1 RETURNING guid", requestId, countRequest).Scan(&id)
+	if err != nil {
+		return "", fmt.Errorf("failed to update countRequest: %w", err)
+	}
+	return id,nil
 }
 
 

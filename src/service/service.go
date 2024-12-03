@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"pro-backend-trainee-assignment/src/models"
 	"pro-backend-trainee-assignment/src/repository"
 	"pro-backend-trainee-assignment/src/utils"
@@ -63,6 +64,7 @@ func (s *service) GetValueById(id string) (models.Response, error) {
 
 
 func (s *service) GenerateNumber(req models.GenRequest) (models.Response,error) { 
+	var Response models.Response
 	var GenValue models.GenerateValue
 
 	var err error
@@ -72,15 +74,18 @@ func (s *service) GenerateNumber(req models.GenRequest) (models.Response,error) 
 
 	GenValue.CountRequest,err = s.repo.GetCountRequest(GenValue.RequestId)
 	if err != nil {
-		return models.Response{}, errors.New("Error to find countRequest")
+		return models.Response{}, fmt.Errorf("failed to get countRequest: %w", err)
 	}
 
 	if GenValue.CountRequest != 0 {
-		id := s.repo.UpdateCountRequestAndRetrieveId(GenValue.RequestId,GenValue.CountRequest+1)
-		var Response models.Response
+		id,err := s.repo.UpdateCountRequestAndRetrieveId(GenValue.RequestId,GenValue.CountRequest+1)
+		if err != nil {
+			return models.Response{}, fmt.Errorf("failed to update countRequest: %w", err)
+		}
+		
 		Response,err = s.GetValueById(id)
 		if err != nil {
-			return Response, errors.New("Error to find value")
+			return Response, fmt.Errorf("failed to get value: %w", err)
 		}
 		return Response, nil
 	} else {
@@ -111,10 +116,9 @@ func (s *service) GenerateNumber(req models.GenRequest) (models.Response,error) 
 
 	err = s.repo.Generate(GenValue) 
 	if err != nil {
-		return models.Response{}, errors.New("Error to generate value")
+		return models.Response{}, fmt.Errorf("failed to generate value: %w", err)
 	}
 	
-	var Response models.Response
 	Response = models.Response{Id: GenValue.ID, Value: GenValue.Value}
 	return Response, nil
 
