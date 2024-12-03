@@ -34,7 +34,7 @@ func (c *Consumer) ConsumeGeneratedValue() {
 		nil,
 	)
 	if err != nil {
-		log.Fatalf("failed to register a consumer %w", err)
+		log.Fatalf("failed to register a consumer %v", err)
 	}
 
 	for d := range msgs {

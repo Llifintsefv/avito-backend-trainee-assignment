@@ -87,7 +87,7 @@ func (s *service) GenerateNumber(req models.GenRequest) (models.Response,error) 
 		GenValue.CountRequest = 1
 	}
 	
-	GenValue.ID = utils.GenerateGUID()
+	GenValue.ID = req.ID
 	GenValue.Type = req.Type
 	GenValue.UserAgent = req.UserAgent
 	GenValue.Url = req.Url

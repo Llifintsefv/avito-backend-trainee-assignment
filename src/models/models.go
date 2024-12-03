@@ -1,6 +1,7 @@
 package models
 
 type GenRequest struct {
+	ID           string `json:"id"`
 	Type         string   `json:"type"`
 	Length       int      `json:"length,omitempty"`
 	Values       []string `json:"values,omitempty"`

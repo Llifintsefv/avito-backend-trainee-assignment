@@ -6,6 +6,7 @@ import (
 	"pro-backend-trainee-assignment/src/models"
 	rabbitmq "pro-backend-trainee-assignment/src/rabbitMQ"
 	"pro-backend-trainee-assignment/src/service"
+	"pro-backend-trainee-assignment/src/utils"
 
 	"github.com/gorilla/mux"
 )
@@ -46,6 +47,7 @@ func (h *Handler)GenerateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	req.ID = utils.GenerateGUID()
 	req.UserAgent = r.Header.Get("User-Agent")
 	req.Url = r.URL.String()
 
@@ -62,7 +64,7 @@ func (h *Handler)GenerateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 
-	if err := json.NewEncoder(w).Encode(map[string]string{"message": "User creation request accepted"}); err != nil {
+	if err := json.NewEncoder(w).Encode(req.ID); err != nil {
 		http.Error(w,"internal server error",http.StatusInternalServerError)
 		return
 	}
