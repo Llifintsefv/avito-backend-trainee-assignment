@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"pro-backend-trainee-assignment/src/handler"
+	rabbitmq "pro-backend-trainee-assignment/src/rabbitMQ"
 	"pro-backend-trainee-assignment/src/repository"
 	"pro-backend-trainee-assignment/src/service"
 
@@ -53,15 +54,30 @@ func InitDB() (*sql.DB,error) {
 
 
 func main() {
+	
 	db,err := InitDB()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
+	ch,err := rabbitmq.InitRabbitMQ()
+	
+	publisher,err := rabbitmq.NewPublisher(ch)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	
 	repo := repository.NewRepository(db)
 	service := service.NewService(repo)
-	handler := handler.NewHandler(service)
+	handler := handler.NewHandler(service,publisher)
+
+	consumer,err := rabbitmq.NewConsumer(ch,service)
+	if err != nil {
+		log.Fatal(err)
+	}
+	go consumer.ConsumeGeneratedValue()
 
 
 	r := mux.NewRouter()

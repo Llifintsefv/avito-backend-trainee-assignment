@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"pro-backend-trainee-assignment/src/models"
+	rabbitmq "pro-backend-trainee-assignment/src/rabbitMQ"
 	"pro-backend-trainee-assignment/src/service"
 
 	"github.com/gorilla/mux"
@@ -12,15 +13,20 @@ import (
 
 type Handler struct {
 	service service.Service
+	publisher *rabbitmq.Publisher
 }
 
-func NewHandler(service service.Service) *Handler{
-	return &Handler{service: service}
+func NewHandler(service service.Service, publisher *rabbitmq.Publisher) *Handler{
+	return &Handler{
+		service: service,
+		publisher: publisher,
+	}
 }
 
 var (
 	RetrieveRequest models.RetrieveRequest
 )
+
 
 
 func (h *Handler)GenerateHandler(w http.ResponseWriter, r *http.Request) {
@@ -43,15 +49,20 @@ func (h *Handler)GenerateHandler(w http.ResponseWriter, r *http.Request) {
 	req.UserAgent = r.Header.Get("User-Agent")
 	req.Url = r.URL.String()
 
-	GenResponse,err := h.service.GenerateNumber(req)
 
-
+	reqJson,err := json.Marshal(req)
 	if err != nil {
-		http.Error(w,"failed to generate " + req.Type,http.StatusInternalServerError)
+		http.Error(w,"internal server error",http.StatusInternalServerError)
+		return
+	}
+	err = h.publisher.PublishGenerateValue(reqJson)
+	if err != nil {
+		http.Error(w,"internal server error",http.StatusInternalServerError)
 		return
 	}
 
-	if err := json.NewEncoder(w).Encode(GenResponse); err != nil {
+
+	if err := json.NewEncoder(w).Encode(map[string]string{"message": "User creation request accepted"}); err != nil {
 		http.Error(w,"internal server error",http.StatusInternalServerError)
 		return
 	}

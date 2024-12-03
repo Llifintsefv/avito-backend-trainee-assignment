@@ -2,19 +2,14 @@ package service
 
 import (
 	"errors"
-	"fmt"
-	"math/rand"
 	"pro-backend-trainee-assignment/src/models"
 	"pro-backend-trainee-assignment/src/repository"
+	"pro-backend-trainee-assignment/src/utils"
 	"strconv"
-	"strings"
-	"time"
-
-	"github.com/google/uuid"
 )
 
 type Service interface {
-	GenerateNumber(models.GenRequest) (models.Response,error)
+	GenerateNumber(req models.GenRequest) (models.Response,error)
 	Retrieve(models.RetrieveRequest)(models.Response,error)
 }
 
@@ -23,7 +18,9 @@ type service struct {
 }
 
 func NewService(repo repository.Repository) *service {
-	return &service{repo: repo}
+	return &service{
+		repo: repo,
+	}
 }
 
 func (s *service) Retrieve(RetrieveRequest models.RetrieveRequest) (models.Response, error) {
@@ -65,10 +62,12 @@ func (s *service) GetValueById(id string) (models.Response, error) {
 }
 
 
-func (s *service) GenerateNumber(req models.GenRequest) (models.Response,error) {
+func (s *service) GenerateNumber(req models.GenRequest) (models.Response,error) { 
 	var GenValue models.GenerateValue
+
 	var err error
-	
+
+
 	GenValue.RequestId = req.RequestId
 
 	GenValue.CountRequest,err = s.repo.GetCountRequest(GenValue.RequestId)
@@ -85,10 +84,10 @@ func (s *service) GenerateNumber(req models.GenRequest) (models.Response,error) 
 		}
 		return Response, nil
 	} else {
-		GenValue.CountRequest = 2
+		GenValue.CountRequest = 1
 	}
 	
-	GenValue.ID = generateGUID()
+	GenValue.ID = utils.GenerateGUID()
 	GenValue.Type = req.Type
 	GenValue.UserAgent = req.UserAgent
 	GenValue.Url = req.Url
@@ -96,18 +95,18 @@ func (s *service) GenerateNumber(req models.GenRequest) (models.Response,error) 
 
 	switch req.Type {
 	case "string":
-		GenValue.Value = generateString(req.Length)
+		GenValue.Value = utils.GenerateString(req.Length)
 	case "number":
-		GenValue.Value = generateNumber(req.Length)
+		GenValue.Value = utils.GenerateNumber(req.Length)
 	case "guid":
-		GenValue.Value = generateGUID()
+		GenValue.Value = utils.GenerateGUID()
 	case "alphanumeric":
-		GenValue.Value= generateAlphanumeric(req.Length)
+		GenValue.Value= utils.GenerateAlphanumeric(req.Length)
 	case "enum":
 		if len(req.Values) == 0 {
 			return models.Response{}, errors.New("values cannot be empthy for enum")
 		}
-		GenValue.Value = generateEnum(req.Values)
+		GenValue.Value = utils.GenerateEnum(req.Values)
 	}
 
 	err = s.repo.Generate(GenValue) 
@@ -123,46 +122,3 @@ func (s *service) GenerateNumber(req models.GenRequest) (models.Response,error) 
 }
 
 
-func generateNumber(length int) (string) {
-	rand.Seed(time.Now().UnixNano())
-	var result string
-	for i := 0; i < length; i++ {
-		result += strconv.Itoa(rand.Intn(10))
-	}
-	return result
-	
-}
-
-func generateString(length int) (string) {
-	rand.Seed(time.Now().UnixNano())
-	RuneArr := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-    var sb strings.Builder
-    sb.Grow(length)
-    for i := 0; i < length; i++ {
-        sb.WriteRune(RuneArr[rand.Intn(len(RuneArr))])
-    }
-    return sb.String()
-}
-
-
-func generateGUID() (string) {
-	guid := uuid.New().String()
-
-	return guid
-}
-
-func generateAlphanumeric(length int) (string) {
-	RuneArr := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	rand.Seed(time.Now().UnixNano())
-	var sb strings.Builder
-    sb.Grow(length)
-    for i := 0; i < length; i++ {
-        sb.WriteRune(RuneArr[rand.Intn(len(RuneArr))])
-    }
-    return sb.String()
-}
-
-func generateEnum(values []string) (string) {
-	randomIndex := rand.Intn(len(values))
-    return values[randomIndex]
-}
