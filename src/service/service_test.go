@@ -54,7 +54,7 @@ func TestService_Retrieve(t *testing.T) {
 	}
 
 	mockRepo.On("Retrieve", "test_id").Return("test_value", "string", nil)
-	mockRepo.On("Generate", mock.AnythingOfType("models.GenerateValue")).Return(nil)
+	mockRepo.On("git ", mock.AnythingOfType("models.GenerateValue")).Return(nil)
 
 	response, err := service.Retrieve(req)
 
